@@ -1,14 +1,15 @@
 [tool.poetry]
 name = "zrob"
 version = "0.1.0"
-description = ""
-authors = ["Martin Baláž <martin.balaz@trojsten.sk>"]
+description = "A simple replacement for where make is too old-school"
+authors = ["Martin Odokienko <martin.balaz@trojsten.sk>"]
 license = "GPLv3"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-
+regex = "^2025.11.3"
+colorama = "*"
 
 [build-system]
 requires = ["poetry-core"]
