@@ -1,13 +1,14 @@
 import argparse
 import logging
+from pathlib import Path
 
 from typing import Optional as Opt
 
 from .rule import Rule
 from .. import colour as c
+from .. import logger
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s.%(msecs)03d [%(levelname)s]: %(message)s', datefmt='%H:%M:%S')
-log = logging.getLogger('zrob')
+log = logger.setup_log('zrob')
 
 
 class Builder:
@@ -32,14 +33,39 @@ class Builder:
     def register(self, target: Rule):
         self.rules.add(target)
 
-    def build(self, what: Opt[str] = None):
+    def go(self):
         for target in self.targets:
-            log.debug(f"Now trying to match a rule to {c.path(target)}")
-            for rule in self.rules:
-                if rule.match(target):
-                    rule.target = target
-                    log.debug(f"Matched rule {c.rule(rule)} with target {c.path(target)}")
-                    rule.prepare(target)
-                    rule.build()
-                    return
-            log.error(f"{c.err("No rule matched")} {c.path(target)}")
+            if (result := self.build(target)) == True:
+                log.info(f"Build {c.ok('succeeded')} for {c.path(target)}")
+            else:
+                log.error(f"Build failed for {c.path(target)}")
+
+    def build(self, what: Opt[str] = None):
+        log.debug(f"Now trying to match a rule to {c.path(what)}")
+
+        for rule in self.rules:
+            if rule.match(what):
+                rule.target = what
+                log.debug(f"Matched rule {c.rule(rule)} for target {c.path(what)}")
+                rule.prepare(what)
+
+                fulfilled = True
+
+                for name, path in rule.prerequisites.items():
+                    log.debug(f"Prerequisite {c.prereq(path)}")
+                    fulfilled &= self.build(path)
+
+                if fulfilled:
+                    log.debug(f"All prerequisited have been met")
+                    return rule.build()
+                else:
+                    return False
+
+        log.info(f"{c.err("No rule can process")} {c.path(what)}")
+
+        if Path(what).exists():
+            log.debug(f"Object {c.path(what)} exists in the filesystem")
+            return True
+        else:
+            log.critical(f"Object {c.path(what)} does not exist and does not match any rules. Cannot continue.")
+            return False

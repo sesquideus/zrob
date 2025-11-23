@@ -16,12 +16,11 @@ class Rule:
         self.regex = re.compile(match)
         self.target: str = None
         self.prerequisites: dict[str, Any] = {}
-        self.optionals: list[str] = []
+        self.optionals: dict[str, Any] = {}
         self.actions: list[Action] = []
 
-    def add_action(self, action) -> Self:
-        self.actions.append(action)
-        log.debug("New args")
+    def add_action(self, *actions) -> Self:
+        self.actions += actions
         return self
 
     def requires(self, **kwargs: str) -> Self:
@@ -59,6 +58,10 @@ class Rule:
         return f"{self.regex.pattern!s}"
 
     def build(self):
+        ok = True
         for action in self.actions:
             action.construct(self.prerequisites, self.target, **self.tokens)
-            action.do()
+            ok &= action.do()
+
+        return ok
+

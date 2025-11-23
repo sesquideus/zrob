@@ -1,4 +1,5 @@
 import pathlib
+from typing import Callable
 
 
 class Prereq:
@@ -12,13 +13,12 @@ class Prereq:
         return f"{self.__class__.__name__}({self.value})"
 
 
+
+
 class Optional:
-    def __init__(self, condition, *args):
+    def __init__(self, condition: Callable[[], bool], *args):
         self.condition = condition
         self.args = list(args)
-
-    def exists(self) -> bool:
-        return pathlib.Path(self.condition).exists()
 
     def expand(self, prerequisites: dict[str, str]) -> str:
         expanded = []
